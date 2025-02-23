@@ -32,7 +32,7 @@ You can choose one of the two scripts depending on your environment:
 #### Get the Script
 ```bash
 # Download the script
-curl -L https://git.io/rebase-via-merge -o ~/git-rebase-via-merge.sh
+curl -L https://raw.githubusercontent.com/caneppelevitor/git-rebase-via-merge-powershell/refs/heads/master/git-rebase-via-merge.sh -o ~/git-rebase-via-merge.sh
 
 # Make it executable
 chmod +x ~/git-rebase-via-merge.sh
@@ -69,7 +69,7 @@ If you’d like to run this script natively in Windows PowerShell (instead of Gi
 #### Get the Script
 Run the following PowerShell command to download the script and place it in the home directory (`$HOME`):
 ```powershell
-Invoke-WebRequest -Uri "https://your-repo-url/git-rebase-via-merge.ps1" -OutFile "$HOME\git-rebase-via-merge.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/caneppelevitor/git-rebase-via-merge-powershell/refs/heads/master/git-rebase-via-merge.ps1" -OutFile "$HOME\git-rebase-via-merge.ps1"
 ```
 
 #### Allow PowerShell Scripts to Run
