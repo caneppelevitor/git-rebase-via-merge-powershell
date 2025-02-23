@@ -1,6 +1,6 @@
 # Git Rebase via Merge
 
-Have you ever rebased a branch, resolving many conflicts on multiple commits?
+Have you ever rebased a branch, resolving many conflicts on multiple commits? 
 Yes, that's a sad story. It wouldn't be so sad if it was a merge instead, because with merges, you typically fix only the final conflicts once.
 
 ## The Method
@@ -67,8 +67,10 @@ That’s it! The script will prompt you through each step, handle conflicts inte
 If you’d like to run this script natively in Windows PowerShell (instead of Git-Bash), you can use the `.ps1` version.
 
 #### Get the Script
-1. Create a new file (e.g., `git-rebase-via-merge.ps1`) in your Git repo or somewhere on your computer.
-2. Copy the PowerShell script into that file. You can obtain the script from this repo (or from a provided link in your documentation).
+Run the following PowerShell command to download the script and place it in the home directory (`$HOME`):
+```powershell
+Invoke-WebRequest -Uri "https://your-repo-url/git-rebase-via-merge.ps1" -OutFile "$HOME\git-rebase-via-merge.ps1"
+```
 
 #### Allow PowerShell Scripts to Run
 By default, Windows may block `.ps1` script execution. Open an elevated PowerShell and run:
@@ -80,13 +82,13 @@ Set-ExecutionPolicy RemoteSigned
 #### Usage
 Open a PowerShell terminal in your repo directory and run:
 ```powershell
-.\git-rebase-via-merge.ps1
+$HOME\git-rebase-via-merge.ps1
 ```
 By default, it will try to rebase on `origin/develop` (or whatever default you set inside the script).
 
 If you want a different base branch, do:
 ```powershell
-.\git-rebase-via-merge.ps1 origin/main
+$HOME\git-rebase-via-merge.ps1 origin/main
 ```
 
 The script will:
@@ -135,4 +137,6 @@ No dependencies beyond Git and either Bash (for the `.sh` script) or PowerShell 
 - Enjoy only **one conflict resolution step** (the hidden merge), plus a clean, linear commit history after rebase.
 
 ---
+
+### Happy Rebasing! 🚀
 
