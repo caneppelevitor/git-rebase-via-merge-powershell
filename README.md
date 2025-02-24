@@ -82,13 +82,13 @@ Set-ExecutionPolicy RemoteSigned
 #### Usage
 Open a PowerShell terminal in your repo directory and run:
 ```powershell
-$HOME\git-rebase-via-merge.ps1
+& "$HOME\git-rebase-via-merge.ps1"
 ```
 By default, it will try to rebase on `origin/develop` (or whatever default you set inside the script).
 
 If you want a different base branch, do:
 ```powershell
-$HOME\git-rebase-via-merge.ps1 origin/main
+& "$HOME\git-rebase-via-merge.ps1" origin/main
 ```
 
 The script will:

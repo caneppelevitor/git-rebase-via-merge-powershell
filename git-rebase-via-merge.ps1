@@ -17,10 +17,9 @@
 
 param(
     [string]
-    $BaseBranch = "origin/develop"  # If no argument, default to origin/develop
+    $BaseBranch = "origin/stage"
 )
 
-# Make PowerShell stop on non-zero exit codes
 $ErrorActionPreference = "Stop"
 
 function Main {
@@ -47,7 +46,6 @@ function Main {
         Fix-Merge-Conflicts
     }
 
-    # Capture the hash of that hidden merge commit
     $hiddenResultHash = Get-Hash HEAD
 
     Write-Host "Merge succeeded at hidden commit:"
@@ -69,7 +67,6 @@ function Main {
         Fix-Rebase-Conflicts
     }
 
-    # Compare the final HEAD tree with the hidden merge commit's tree
     $currentTree = git cat-file -p HEAD | Select-String "tree"
     $resultTree  = git cat-file -p $hiddenResultHash | Select-String "tree"
 
@@ -78,7 +75,6 @@ function Main {
         Write-Host ""
 
         $additionalCommitMessage = "Rebase via merge. '$($Script:CurrentBranch)' rebased on '$BaseBranch'."
-        # Create a new commit whose tree matches the hidden merge, parented on current HEAD
         $additionalCommitHash = git commit-tree "$hiddenResultHash^{tree}" -p HEAD -m $additionalCommitMessage
 
         git merge --ff $additionalCommitHash
@@ -117,7 +113,6 @@ function Init {
     Show-Commit $baseBranchHash
     Write-Host ""
 
-    # Check if there are any uncommitted changes
     $changedFiles = Get-Any-Changed-Files
     if ($changedFiles) {
         Write-Host "Can't rebase. You need to commit or stash changes in the following files:"
@@ -126,24 +121,17 @@ function Init {
         exit 1
     }
 
-    # If they're the same commit, can't rebase
     if ($baseBranchHash -eq $Script:CurrentBranchHash) {
         Write-Host "Can't rebase. Current branch is equal to the base branch."
         exit 1
     }
 
-    # Check if current branch is already rebased
-    #   In Bash: git rev-list "$BaseBranch" ^"$CurrentBranch"
-    #   If empty, there's nothing new in base branch that isn't in current
     $revList1 = git rev-list $BaseBranch ^$($Script:CurrentBranch)
     if (-not $revList1) {
         Write-Host "Can't rebase. Current branch is already rebased."
         exit 1
     }
 
-    # Check if the current branch has unique commits
-    #   In Bash: git rev-list ^"$BaseBranch" "$CurrentBranch"
-    #   If empty, there's no unique commit, so you can do a fast-forward
     $revList2 = git rev-list ^$BaseBranch $Script:CurrentBranch
     if (-not $revList2) {
         Write-Host "Can't rebase. Current branch has no unique commits. You can do fast-forward merge."
@@ -151,32 +139,30 @@ function Init {
     }
 
     while ($true) {
-        $input = Read-Host "Continue (c) / Abort (a)"
+        $input = (Read-Host "Continue (c) / Abort (a)").Trim().ToLower()
         Write-Host ""
 
-        switch ($input) {
-            "c" { break }
-            "a" {
-                Write-Host "Aborted."
-                exit 1
-            }
-            default {
-                Write-Host "Invalid option."
-                Write-Host "Type 'c' to Continue or 'a' to Abort."
-                Write-Host ""
-            }
+        if ($input -eq "c") {
+            break
+        }
+        elseif ($input -eq "a") {
+            Write-Host "Aborted."
+            exit 1
+        }
+        else {
+            Write-Host "Invalid option."
+            Write-Host "Type 'c' to Continue or 'a' to Abort."
+            Write-Host ""
         }
     }
 }
 
 function Merge-Conflicts-Present {
-    # In Bash: checks if .git/MERGE_HEAD exists
     $repoRoot = git rev-parse --show-toplevel
     return Test-Path "$repoRoot\.git\MERGE_HEAD"
 }
 
 function Rebase-Conflicts-Present {
-    # In Bash: checks for 'U' (unmerged) in the diff filter
     $conflictFiles = git diff --name-only --diff-filter=U --relative
     return (-not [string]::IsNullOrEmpty($conflictFiles))
 }
@@ -185,6 +171,7 @@ function Fix-Merge-Conflicts {
     while ($true) {
         Write-Host "Fix all conflicts in the following files, stage all changes, then type 'c':"
         $unstaged = Get-Unstaged-Files
+
         if ($unstaged) {
             $unstaged | ForEach-Object { Write-Host $_ }
         } else {
@@ -196,31 +183,31 @@ function Fix-Merge-Conflicts {
         Get-Files-With-Conflict-Markers
         Write-Host ""
 
-        $input = Read-Host "Continue (c) / Abort (a)"
+        $input = (Read-Host "Continue (c) / Abort (a)").Trim().ToLower()
         Write-Host ""
 
-        switch ($input) {
-            "c" {
-                $unstaged = Get-Unstaged-Files
-                if (-not $unstaged) {
-                    git commit -m "Hidden orphaned commit to save merge result."
-                    break
-                } else {
-                    Write-Host "There are still unstaged files."
-                    $unstaged | ForEach-Object { Write-Host $_ }
-                    Write-Host ""
-                }
+        if ($input -eq "c") {
+            $unstaged = Get-Unstaged-Files
+            if (-not $unstaged) {
+                git commit -m "Hidden orphaned commit to save merge result."
+                break
+            } else {
+                Write-Host "There are still unstaged files."
+                $unstaged | ForEach-Object { Write-Host $_ }
+                Write-Host ""
             }
-            "a" {
-                Write-Host "Aborting merge."
-                git merge --abort
-                git checkout $Script:CurrentBranch
-                Write-Host "Aborted."
-                exit 2
-            }
-            default {
-                Write-Host "Invalid option."
-            }
+        }
+        elseif ($input -eq "a") {
+            Write-Host "Aborting merge."
+            git merge --abort
+            git checkout $Script:CurrentBranch
+            Write-Host "Aborted."
+            exit 2
+        }
+        else {
+            Write-Host "Invalid option."
+            Write-Host "Type 'c' to Continue or 'a' to Abort."
+            Write-Host ""
         }
     }
 }
@@ -229,6 +216,7 @@ function Fix-Rebase-Conflicts {
     while ($true) {
         Write-Host "Fix all conflicts in the following files, stage all changes, then type 'c':"
         $unstaged = Get-Unstaged-Files
+
         if ($unstaged) {
             $unstaged | ForEach-Object { Write-Host $_ }
         } else {
@@ -240,37 +228,36 @@ function Fix-Rebase-Conflicts {
         Get-Files-With-Conflict-Markers
         Write-Host ""
 
-        $input = Read-Host "Continue (c) / Abort (a)"
+        $input = (Read-Host "Continue (c) / Abort (a)").Trim().ToLower()
         Write-Host ""
 
-        switch ($input) {
-            "c" {
-                $unstaged = Get-Unstaged-Files
-                if (-not $unstaged) {
-                    git rebase --continue
-                    break
-                } else {
-                    Write-Host "There are still unstaged files."
-                    $unstaged | ForEach-Object { Write-Host $_ }
-                    Write-Host ""
-                }
+        if ($input -eq "c") {
+            $unstaged = Get-Unstaged-Files
+            if (-not $unstaged) {
+                git rebase --continue
+                break
+            } else {
+                Write-Host "There are still unstaged files."
+                $unstaged | ForEach-Object { Write-Host $_ }
+                Write-Host ""
             }
-            "a" {
-                Write-Host "Aborting rebase."
-                git rebase --abort
-                git checkout $Script:CurrentBranch
-                Write-Host "Aborted."
-                exit 2
-            }
-            default {
-                Write-Host "Invalid option."
-            }
+        }
+        elseif ($input -eq "a") {
+            Write-Host "Aborting rebase."
+            git rebase --abort
+            git checkout $Script:CurrentBranch
+            Write-Host "Aborted."
+            exit 2
+        }
+        else {
+            Write-Host "Invalid option."
+            Write-Host "Type 'c' to Continue or 'a' to Abort."
+            Write-Host ""
         }
     }
 }
 
 function Get-Hash($ref) {
-    # In Bash: git rev-parse --short <ref>
     try {
         return (git rev-parse --short $ref)
     }
@@ -280,7 +267,6 @@ function Get-Hash($ref) {
 }
 
 function Show-Commit($commitHash) {
-    # In Bash: git log -n1 --pretty=format:"%<(20)%an | %<(14)%ar | %s" <hash>
     git log -n 1 --pretty=format:"%<(20)%an | %<(14)%ar | %s" $commitHash
 }
 
@@ -296,7 +282,6 @@ function Get-Unstaged-Files {
 }
 
 function Get-Files-With-Conflict-Markers {
-    # In Bash: git diff --check
     git diff --check
 }
 
