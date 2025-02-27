@@ -136,7 +136,3 @@ No dependencies beyond Git and either Bash (for the `.sh` script) or PowerShell 
 - Use it in place of `git rebase` when your branch may have lots of conflicts.
 - Enjoy only **one conflict resolution step** (the hidden merge), plus a clean, linear commit history after rebase.
 
----
-
-### Happy Rebasing! 🚀
-
